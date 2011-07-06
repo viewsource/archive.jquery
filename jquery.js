@@ -53,7 +53,7 @@ function jQuery(a,c) {
 }
 
 // Map over the $ in case of overwrite
-if ( $ )
+if ( typeof $ != "undefined" )
 	jQuery._$ = $;
 
 // Map the jQuery namespace to the '$' one
@@ -131,8 +131,9 @@ jQuery.fn = jQuery.prototype = {
 		for ( var j = 0; j < e.length; j++ ) {
 			var r = e[j].childNodes;
 			for ( var i = 0; i < r.length; i++ )
-				t += r[i].nodeType != 1 ?
-					r[i].nodeValue : jQuery.fn.text([ r[i] ]);
+				if ( r[i].nodeType != 8 )
+					t += r[i].nodeType != 1 ?
+						r[i].nodeValue : jQuery.fn.text([ r[i] ]);
 		}
 		return t;
 	},
@@ -475,6 +476,7 @@ jQuery.extend({
 			odd: "i%2",
 			
 			// Child Checks
+			"nth-child": "jQuery.sibling(a,m[3]).cur",
 			"first-child": "jQuery.sibling(a,0).cur",
 			"last-child": "jQuery.sibling(a,0).last",
 			"only-child": "jQuery.sibling(a).length==1",
@@ -555,6 +557,8 @@ jQuery.extend({
 			var foundToken = false;
 			
 			for ( var i = 0; i < jQuery.token.length; i += 2 ) {
+				if ( foundToken ) continue;
+
 				var re = new RegExp("^(" + jQuery.token[i] + ")");
 				var m = re.exec(t);
 				
@@ -591,8 +595,9 @@ jQuery.extend({
 							);
 					}
 				}
-			}
 	
+			}
+
 			if ( t ) {
 				var val = jQuery.filter(t,r);
 				ret = r = val.r;
@@ -623,7 +628,9 @@ jQuery.extend({
 			"class": "className",
 			"float": "cssFloat",
 			innerHTML: "innerHTML",
-			className: "className"
+			className: "className",
+			value: "value",
+			disabled: "disabled"
 		};
 
 		if ( fix[name] ) {
@@ -992,7 +999,7 @@ jQuery.macros = {
 
 		siblings: jQuery.sibling,
 
-		children: "a.childNodes"
+		children: "jQuery.sibling(a.firstChild)"
 	},
 
 	each: {
@@ -1025,7 +1032,7 @@ jQuery.macros = {
 		},
 
 		remove: function(a){
-			if ( !a || jQuery.filter( [this], a ).r )
+			if ( !a || jQuery.filter( a, [this] ).r )
 				this.parentNode.removeChild( this );
 		},
 		empty: function(){
@@ -1047,7 +1054,8 @@ jQuery.macros = {
 	}
 };
 
-jQuery.init();jQuery.fn.extend({
+jQuery.init();
+jQuery.fn.extend({
 
 	// We're overriding the old toggle function, so
 	// remember it for later
@@ -1189,8 +1197,9 @@ new function(){
 		// Use the defer script hack
 		var script = document.getElementById("__ie_init");
 		script.onreadystatechange = function() {
-			if ( this.readyState == "complete" )
-				jQuery.ready();
+			if ( this.readyState != "complete" ) return;
+			this.parentNode.removeChild( this );
+			jQuery.ready();
 		};
 	
 		// Clear from memory
@@ -1396,7 +1405,7 @@ jQuery.extend({
 				options.step.apply( elem, [ z.now ] );
 
 			if ( prop == "opacity" ) {
-				if (z.now == 1) z.now = 0.9999;
+				if (jQuery.browser.mozilla && z.now == 1) z.now = 0.9999;
 				if (window.ActiveXObject)
 					y.filter = "alpha(opacity=" + z.now*100 + ")";
 				else
@@ -1581,7 +1590,7 @@ jQuery.fn.load = function( url, params, callback, ifModified ) {
 };
 
 // If IE is used, create a wrapper for the XMLHttpRequest object
-if ( jQuery.browser.msie )
+if ( jQuery.browser.msie && typeof XMLHttpRequest == "undefined" )
 	XMLHttpRequest = function(){
 		return new ActiveXObject(
 			navigator.userAgent.indexOf("MSIE 5") >= 0 ?
@@ -1784,6 +1793,9 @@ jQuery.extend({
 
 		// If the type is "script", eval it
 		if ( type == "script" ) eval.call( window, data );
+
+		// Get the JavaScript object, if JSON is used.
+		if ( type == "json" ) eval( "data = " + data );
 
 		return data;
 	},
