@@ -91,3 +91,6 @@
 [submodule "latest"]
 	path = latest
 	url = git://github.com/viewsource/viewsource.me.jquery.git
+[submodule "1.6.2"]
+	path = 1.6.2
+	url = git://github.com/viewsource/viewsource.me.jquery.git
